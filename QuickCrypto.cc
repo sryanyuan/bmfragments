@@ -42,6 +42,31 @@ static void btea(uint32_t *v, int n, uint32_t const k[4])
     }
 }
 
+void tteaencrypt (uint32_t* v, uint32_t* k) {
+    uint32_t v0=v[0], v1=v[1], sum=0, i;           /* set up */
+    uint32_t delta=0x9e3779b9;                     /* a key schedule constant */
+    uint32_t k0=k[0], k1=k[1], k2=k[2], k3=k[3];   /* cache key */
+    for (i=0; i < 16; i++) {                       /* basic cycle start */
+        sum += delta;
+        v0 += ((v1<<4) + k0) ^ (v1 + sum) ^ ((v1>>5) + k1);
+        v1 += ((v0<<4) + k2) ^ (v0 + sum) ^ ((v0>>5) + k3);  
+    }                                              /* end cycle */
+    v[0]=v0; v[1]=v1;
+}
+
+void tteadecrypt (uint32_t* v, uint32_t* k) {
+    uint32_t v0=v[0], v1=v[1], i;  /* set up */
+    uint32_t delta=0x9e3779b9;                     /* a key schedule constant */
+    uint32_t sum = delta << 4;
+    uint32_t k0=k[0], k1=k[1], k2=k[2], k3=k[3];   /* cache key */
+    for (i=0; i<16; i++) {                         /* basic cycle start */
+        v1 -= ((v0<<4) + k2) ^ (v0 + sum) ^ ((v0>>5) + k3);
+        v0 -= ((v1<<4) + k0) ^ (v1 + sum) ^ ((v1>>5) + k1);
+        sum -= delta;                                   
+    }                                              /* end cycle */
+    v[0]=v0; v[1]=v1;
+}
+
 static const uint16_t crc16tab[256] = {
     0x0000, 0x1021, 0x2042, 0x3063, 0x4084, 0x50a5, 0x60c6, 0x70e7, 0x8108,
     0x9129, 0xa14a, 0xb16b, 0xc18c, 0xd1ad, 0xe1ce, 0xf1ef, 0x1231, 0x0210,
@@ -81,7 +106,7 @@ uint16_t crc16(const char *buf, int len) {
     return crc;
 }
 
-static uint32_t blank_fill = 0;
+static uint64_t blank_fill = 0;
 
 QuickCrypto::QuickCrypto() {
     memset(keys_, 0, sizeof(keys_));
@@ -91,7 +116,86 @@ QuickCrypto::~QuickCrypto() {
 
 }
 
-int QuickCrypto::Encrypt(ByteBuffer &buffer, uint32_t keys[]) {
+int QuickCrypto::EncryptTtea(ByteBuffer &buffer, uint32_t keys[]) {
+    unsigned int cur_size = buffer.GetLength();
+    if (cur_size <= 8) {
+        // No payload
+        return -1;
+    }
+    const unsigned char *data = buffer.GetBuffer();
+    // Skip the length and opcode fields
+    data += sizeof(uint32_t) * 2;
+    cur_size -= sizeof(uint32_t) * 2;
+
+    // Fill with blank bytes
+    unsigned int fill_size = cur_size;
+    unsigned int diff = fill_size % (sizeof(int32_t) * 2);
+    if (diff != 0) {
+        fill_size += sizeof(int32_t) * 2 - diff;
+        if (0 == buffer.Write(&blank_fill, fill_size - cur_size)) {
+            return -1;
+        }
+    }
+    // Check if the pending blocks can contain the original length
+    if (fill_size - cur_size < 2) {
+        // Append the 8 bytes
+        fill_size += 8;
+        if (0 == buffer.Write(&blank_fill, 8)) {
+            return -1;
+        }
+    }
+    // Check the fill size
+    if (cur_size > UINT16_MAX) {
+        return -1;
+    }
+    // Rewrite the original length information
+    uint16_t original_len = (uint16_t)cur_size;
+    memcpy((char *)buffer.GetBuffer() + buffer.GetLength() - 2, &original_len, sizeof(uint16_t));
+
+    for (int i = 0; i < (int)fill_size / 8; i++) {
+        tteaencrypt((uint32_t*)data + i * 2, keys);
+    }
+
+    return 0;
+}
+
+int QuickCrypto::DecryptTtea(ByteBuffer &buffer, uint32_t keys[]) {
+    unsigned int cur_size = buffer.GetLength();
+    if (cur_size <= 4 + 4 + 2) {
+        // No payload
+        return -1;
+    }
+
+    const unsigned char *data = buffer.GetBuffer();
+    data += sizeof(uint32_t) * 2;
+    cur_size -= sizeof(uint32_t) * 2;
+
+    if (cur_size % (sizeof(uint32_t) * 2) != 0) {
+        return -1;
+    }
+
+    for (int i = 0; i < int(cur_size) / 8; i++) {
+        tteadecrypt((uint32_t*)data + i * 2, keys);
+    }
+
+    // Read the original length
+    uint16_t original_data_len = 0;
+    memcpy(&original_data_len,
+           buffer.GetBuffer() + buffer.GetLength() - sizeof(original_data_len),
+           sizeof(original_data_len));
+    if (original_data_len <= 0 || original_data_len > cur_size - 2) {
+        return -1;
+    }
+
+    // Erase the filled data
+    if (original_data_len != cur_size) {
+        buffer.Erase(cur_size - original_data_len);
+    }
+    
+    return 0;
+}
+
+int QuickCrypto::EncryptXXtea(ByteBuffer &buffer, uint32_t keys[]) {
     unsigned int cur_size = buffer.GetLength();
     if (cur_size <= 8) {
         // No payload
@@ -121,7 +225,7 @@ int QuickCrypto::Encrypt(ByteBuffer &buffer, uint32_t keys[]) {
     return 0;
 }
 
-int QuickCrypto::Decrypt(ByteBuffer &buffer, uint32_t keys[]) {
+int QuickCrypto::DecryptXXtea(ByteBuffer &buffer, uint32_t keys[]) {
     unsigned int cur_size = buffer.GetLength();
     if (cur_size <= 4 + 4 + 4) {
         // No payload
@@ -178,14 +282,26 @@ void QuickCrypto::KeyNext() {
     keys_[3]++;
 }
 
-int QuickCrypto::Encrypt(ByteBuffer &buffer) {
-    int res = Encrypt(buffer, keys_);
+int QuickCrypto::EncryptXXtea(ByteBuffer &buffer) {
+    int res = EncryptXXtea(buffer, keys_);
     KeyNext();
     return res;
 }
 
-int QuickCrypto::Decrypt(ByteBuffer &buffer) {
-    int res = Decrypt(buffer, keys_);
+int QuickCrypto::DecryptXXtea(ByteBuffer &buffer) {
+    int res = DecryptXXtea(buffer, keys_);
+    KeyNext();
+    return res;
+}
+
+int QuickCrypto::EncryptTtea(ByteBuffer &buffer) {
+    int res = EncryptTtea(buffer, keys_);
+    KeyNext();
+    return res;
+}
+
+int QuickCrypto::DecryptTtea(ByteBuffer &buffer) {
+    int res = DecryptTtea(buffer, keys_);
     KeyNext();
     return res;
 }
@@ -200,28 +316,34 @@ int QuickCrypto::SetChecksum(ByteBuffer &buffer) {
 
     uint16_t val = crc16(data + 8, payload_len);
     uint32_t dwval = *(uint32_t*)(data + 4);
+    // Reset the higher 16bit
+    dwval &= 0x00ff;
     dwval |= (val << 16);
     *(uint32_t*)(data + 4) = dwval;
     return 0;
 }
 
-uint16_t QuickCrypto::GetChecksum(ByteBuffer &buffer) {
+uint16_t QuickCrypto::GetChecksum(ByteBuffer &buffer, bool &ok) {
     char *data = (char *)buffer.GetBuffer();
     unsigned int payload_len = buffer.GetLength();
     if (payload_len <= 8) {
+        ok = false;
         return 0;
     }
 
     uint32_t dwval = *(uint32_t*)(data + 4);
+    ok = true;
     return dwval >> 16;
 }
 
 bool QuickCrypto::VerifyChecksum(ByteBuffer &buffer) {
-    uint16_t checksum = GetChecksum(buffer);
-    if (0 == checksum) {
+    bool ok = true;
+    uint16_t checksum = GetChecksum(buffer, ok);
+    if (!ok) {
         return false;
     }
 
     uint16_t cur_checksum = crc16((const char*)buffer.GetBuffer() + 8, buffer.GetLength() - 8);
-    return cur_checksum == checksum;
+    bool res = (cur_checksum == checksum);
+    return res;
 }
