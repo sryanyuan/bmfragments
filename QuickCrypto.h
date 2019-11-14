@@ -14,16 +14,21 @@ public:
 public:
     void Init(uint16_t static_seed);
 
-    int Encrypt(ByteBuffer &buffer);
-    int Decrypt(ByteBuffer &buffer);
+    int EncryptXXtea(ByteBuffer &buffer);
+    int DecryptXXtea(ByteBuffer &buffer);
+
+    int EncryptTtea(ByteBuffer &buffer);
+    int DecryptTtea(ByteBuffer &buffer);
 
     static int SetChecksum(ByteBuffer &buffer);
-    static uint16_t GetChecksum(ByteBuffer &buffer);
+    static uint16_t GetChecksum(ByteBuffer &buffer, bool &ok);
     static bool VerifyChecksum(ByteBuffer &buffer);
 
-    private:
-    int Encrypt(ByteBuffer &buffer, uint32_t keys[]);
-    int Decrypt(ByteBuffer &buffer, uint32_t keys[]);
+private:
+    int EncryptXXtea(ByteBuffer &buffer, uint32_t keys[]);
+    int DecryptXXtea(ByteBuffer &buffer, uint32_t keys[]);
+    int EncryptTtea(ByteBuffer &buffer, uint32_t keys[]);
+    int DecryptTtea(ByteBuffer &buffer, uint32_t keys[]);
     void KeyNext();
 
 private:
@@ -31,3 +36,16 @@ private:
 };
 
 #endif
+
+/*
+Erase of ByteBuffer:
+void Erase(unsigned int _uSize) {
+        if (_uSize > m_uDestPointer) {
+            m_uDestPointer = _uSize;
+        }
+        m_uDestPointer -= _uSize;
+        if (m_uCurPointer > m_uDestPointer) {
+            m_uDestPointer = m_uCurPointer;
+        }
+    }
+*/
