@@ -110,13 +110,13 @@ int QuickCrypto::Encrypt(ByteBuffer &buffer, uint32_t keys[]) {
             return -1;
         }
     }
-
-    btea((uint32_t*)data, int(fill_size)/sizeof(uint32_t), keys);
-
     // Append the original length information
     if (0 == buffer.Write(&cur_size, sizeof(unsigned int))) {
         return -1;
     }
+    fill_size += sizeof(unsigned int);
+
+    btea((uint32_t*)data, int(fill_size)/sizeof(uint32_t), keys);
 
     return 0;
 }
@@ -131,21 +131,23 @@ int QuickCrypto::Decrypt(ByteBuffer &buffer, uint32_t keys[]) {
         return -1;
     }
 
-    // Read the original length
     const unsigned char *data = buffer.GetBuffer();
+    data += sizeof(uint32_t) * 2;
+    cur_size -= sizeof(uint32_t) * 2;
+
+    btea((uint32_t*)data, -1 * int(cur_size)/sizeof(uint32_t), keys);
+
+    // Read the original length
     unsigned int original_data_len = 0;
-    memcpy(&original_data_len, data + buffer.GetLength() - 4, sizeof(unsigned int));
-    if (original_data_len <= 0 || original_data_len > cur_size - 4 - 4 - 4) {
+    memcpy(&original_data_len,
+           buffer.GetBuffer() + buffer.GetLength() - 4,
+           sizeof(unsigned int));
+    if (original_data_len <= 0 || original_data_len > cur_size - 4) {
         return -1;
     }
     // Erase the original length
     buffer.Erase(sizeof(unsigned int));
-    
-    data += sizeof(uint32_t) * 2;
-    // The head should skip, and the tail already erased
-    cur_size -= sizeof(uint32_t) * 3;
-
-    btea((uint32_t*)data, -1 * int(cur_size)/sizeof(uint32_t), keys);
+    cur_size -= sizeof(unsigned int);
 
     // Erase the filled data
     if (original_data_len != cur_size) {
@@ -170,6 +172,9 @@ void QuickCrypto::Init(uint16_t static_key)
 }
 
 void QuickCrypto::KeyNext() {
+    if (keys_[3] == UINT32_MAX) {
+        keys_[3] = 0;
+    }
     keys_[3]++;
 }
 
