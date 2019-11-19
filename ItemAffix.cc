@@ -444,3 +444,62 @@ ByteBuffer &operator>>(ByteBuffer &buffer, ItemAffix &ia) {
     buffer >> ia.m_nAffixID >> ia.m_xAttribs;
     return buffer;
 }
+
+int FormatAffixEffValue(char *buffer, const std::string &format,
+                        const ItemAffix::EffValue &value) {
+    // Copy format until meet {
+    bool brafound = false;
+    int append_index = 0;
+    for (size_t i = 0; i < format.size() + 1; i++) {
+        if (format[i] == '\0') {
+            buffer[append_index++] = '\0';
+            break;
+        }
+        if (format[i] == '{') {
+            if (brafound) {
+                return -1;
+            }
+            brafound = true;
+            // Read until found the close bra
+            int closeindex = -1;
+            int startindex = i + 1;
+            i++;
+            for (; i < format.size(); i++) {
+                if (format[i] == '{') {
+                    return -1;
+                }
+                if (format[i] == '}') {
+                    closeindex = int(i);
+                    break;
+                }
+            }
+            if (closeindex < 0) {
+                return -1;
+            }
+            // Find the format tip with [i + 1, j - 1]
+            int appendval = 0;
+            if (0 == strncmp(format.c_str() + startindex, "vallow", sizeof("vallow") - 1)) {
+                appendval = value.val >> 16;
+            } else if (0 ==
+                       strncmp(format.c_str() + startindex, "valhigh", sizeof("valhigh") - 1)) {
+                appendval = value.val & 0x0000ffff;
+            } else if (0 == strncmp(format.c_str() + startindex, "val", sizeof("val") - 1)) {
+                appendval = value.val;
+            } else if (0 == strncmp(format.c_str() + startindex, "dura", sizeof("dura") - 1)) {
+                appendval = value.dura;
+            } else {
+                return -1;
+            }
+            char valbuf[32];
+            sprintf(valbuf, "%d", appendval);
+            for (int k = 0; valbuf[k] != '\0'; k++) {
+                buffer[append_index++] = valbuf[k];
+            }
+            brafound = false;
+        } else {
+            // Copy to the buffer
+            buffer[append_index++] = format[i];
+        }
+    }
+}
+
