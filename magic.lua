@@ -1,3 +1,10 @@
+local MagicElementNone = 0
+local MagicElementThunder = 1
+local MagicElementBright = 2
+local MagicElementDark = 3
+local MagicElementWater = 4
+local MagicElementFire = 5
+
 config_constMagicRecord = {
 	-- Zhanshi
     [2] = {
@@ -112,6 +119,7 @@ config_constMagicRecord = {
         Colldown = 0,
         Increase = 0,
         Multiple = 0,
+        Element = MagicElementFire,
         Lvs = {
             {
                 LvReq = 35,
@@ -204,6 +212,7 @@ config_constMagicRecord = {
         Colldown = 0,
         Increase = 0,
         Multiple = 0,
+        Element = MagicElementFire,
         Lvs = {
             {
                 LvReq = 42,
@@ -298,6 +307,7 @@ config_constMagicRecord = {
         Colldown = 0,
         Increase = 2,
         Multiple = 15,
+        Element = MagicElementFire,
         Lvs = {
             {
                 LvReq = 7,
@@ -321,6 +331,7 @@ config_constMagicRecord = {
         Colldown = 0,
         Increase = 4,
         Multiple = 20,
+        Element = MagicElementFire,
         Lvs = {
             {
                 LvReq = 19,
@@ -344,6 +355,7 @@ config_constMagicRecord = {
         Colldown = 0,
         Increase = 4,
         Multiple = 15,
+        Element = MagicElementFire,
         Lvs = {
             {
                 LvReq = 22,
@@ -367,6 +379,7 @@ config_constMagicRecord = {
         Colldown = 0,
         Increase = 10,
         Multiple = 24,
+        Element = MagicElementWater,
         Lvs = {
             {
                 LvReq = 35,
@@ -390,6 +403,7 @@ config_constMagicRecord = {
         Colldown = 0,
         Increase = 5,
         Multiple = 15,
+        Element = MagicElementBright,
         Lvs = {
             {
                 LvReq = 30,
@@ -413,6 +427,7 @@ config_constMagicRecord = {
         Colldown = 0,
         Increase = 8,
         Multiple = 27,
+        Element = MagicElementThunder,
         Lvs = {
             {
                 LvReq = 17,
@@ -448,6 +463,7 @@ config_constMagicRecord = {
         Colldown = 0,
         Increase = 6,
         Multiple = 15,
+        Element = MagicElementFire,
         Lvs = {
             {
                 LvReq = 24,
@@ -529,6 +545,7 @@ config_constMagicRecord = {
         Colldown = 1000,
         Increase = 5,
         Multiple = 10,
+        Element = MagicElementWater,
         Lvs = {
             {
                 LvReq = 40,
@@ -552,6 +569,7 @@ config_constMagicRecord = {
         Colldown = 200,
         Increase = 14,
         Multiple = 35,
+        Element = MagicElementFire,
         Lvs = {
             {
                 LvReq = 42,
@@ -575,6 +593,7 @@ config_constMagicRecord = {
         Colldown = 4000,
         Increase = 12,
         Multiple = 26,
+        Element = MagicElementFire,
         Lvs = {
             {
                 LvReq = 44,
@@ -598,6 +617,7 @@ config_constMagicRecord = {
         Colldown = 2000,
         Increase = 12,
         Multiple = 25,
+        Element = MagicElementWater,
         Lvs = {
             {
                 LvReq = 50,
@@ -621,6 +641,7 @@ config_constMagicRecord = {
         Colldown = 2000,
         Increase = 14,
         Multiple = 30,
+        Element = MagicElementFire,
         Lvs = {
             {
                 LvReq = 62,
@@ -669,6 +690,7 @@ config_constMagicRecord = {
         Colldown = 0,
         Increase = 4,
         Multiple = 17,
+        Element = MagicElementBright,
         Lvs = {
             {
                 LvReq = 18,
@@ -796,6 +818,7 @@ config_constMagicRecord = {
         Colldown = 0,
         Increase = 0,
         Multiple = 0,
+        Element = MagicElementDark,
         Lvs = {
             {
                 LvReq = 14,
@@ -993,6 +1016,7 @@ config_constMagicRecord = {
         Colldown = 0,
         Increase = 4,
         Multiple = 20,
+        Element = MagicElementDark,
         Lvs = {
             {
                 LvReq = 52,
