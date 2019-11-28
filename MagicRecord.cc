@@ -74,6 +74,12 @@ bool LoadMagicRecordFromLua(lua_State *L, const char *pszKeyname) {
             return false;
         }
 
+        // Load elemnt
+        loadKeyInt(L, "Element", mr.nElement);
+        if (mr.nElement < 0 || mr.nElement >= MagicElementTotal) {
+            return false;
+        }
+
         // Load levels
         lua_getfield(L, -1, "Lvs");
         if (!lua_istable(L, -1)) {
