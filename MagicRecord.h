@@ -7,6 +7,21 @@
 
 struct lua_State;
 
+// Bright   restrict    Dark
+// Dark     restrict    Thunder
+// Thunder  restrict    Water
+// Water    restrict    Fire
+// Fire     restrict    Bright
+enum MagicElementType {
+    MagicElementNone,
+    MagicElementThunder,
+    MagicElementBright,
+    MagicElementDark,
+    MagicElementWater,
+    MagicElementFire,
+    MagicElementTotal,
+};
+
 struct MagicLvRecord {
     int nIndex;
     int nLvReq;
@@ -26,6 +41,7 @@ struct MagicRecord {
     int nColldown;
     int nIncrease;
     int nMultiple;
+    int nElement;
     bool bPassive;
 
     std::string xName;
@@ -33,6 +49,7 @@ struct MagicRecord {
     std::vector<MagicLvRecord> xLvs;
 
     MagicRecord() {
+        nElement = 0;
         bPassive = false;
         nID = nJob = nColldown = nIncrease = nMultiple = 0;
     }
